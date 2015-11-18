@@ -52,12 +52,9 @@ class Vertex:
 
     def gather(self, n=100, delta=1e-6):
         #Gather the folding curves and energy curves of a vertex
-        valsI, valsII=np.linspace((self.brhoI[0]-delta)/(2*(n/2)-1), self.brhoI[0]-delta, n/2), np.linspace((self.brhoII[0]-delta)/(2*(n/2)-1), self.brhoII[0]-delta, n/2)
+        valsI, valsII = np.linspace(delta, self.brhoI[0]-delta, n/2), np.linspace(delta, self.brhoII[0]-delta, n/2)
         rhoI, rhoII=self.getRho(valsI, 0), self.getRho(valsII, 1)
-        if self.eps == 0:
-            rhoI, rhoII=np.vstack([-rhoI[::-1,:], np.array([0,0,0,0]), rhoI[:,:]]), np.vstack([-rhoII[::-1,:], np.array([0,0,0,0]), rhoII[:,:]])
-        else:
-            rhoI, rhoII=np.vstack([-rhoI[::-1,:], rhoI[:,:]]), np.vstack([-rhoII[::-1,:],  rhoII[:,:]])
+        rhoI, rhoII=np.vstack([-rhoI[::-1,:], rhoI[:,:]]), np.vstack([-rhoII[::-1,:],  rhoII[:,:]])
         length=np.min([rhoI.shape[0], rhoII.shape[0]])
         rhoI, rhoII=rhoI[:length,:] , rhoII[:length,:]
         eI, eII=np.sum(self.k*(self.rho0-rhoI)**2, axis=1)+np.random.uniform(-1e-14, 1e-14, length), np.sum( self.k*(self.rho0-rhoII)**2, axis=1) +np.random.uniform(-1e-14, 1e-14, length)
@@ -85,17 +82,17 @@ class Vertex:
         self.mrhoBI, self.meBI=mrho[np.sum(mrho, axis=1)<0,:], me[np.sum(mrho, axis=1)<0]
         self.mrhoBII, self.meBII=mrho[np.sum(mrho, axis=1)>0,:], me[np.sum(mrho, axis=1)>0]
 
-        testValsI, testValsII=np.vstack([np.array([0,0,0,0]), self.getRho([1e-5],0)]), np.vstack([np.array([0,0,0,0]), self.getRho([1e-5], 1)])
-        testeI, testeII=np.sum(self.k*(self.rho0-testValsI)**2, axis=1), np.sum( self.k*(self.rho0-testValsII)**2, axis=1)
+        testRhoI, testRhoII = self.getRho(delta, 0), self.getRho(delta, 1)
+        testRhoI, testRhoII = np.vstack([-testRhoI, testRhoI]), np.vstack([-testRhoII, testRhoII])
 
-        if (np.sum(testValsI[1,:])>0 and np.diff(testeI)<0 and np.diff(testeII)>0) or (np.sum(testValsI[1,:])<0 and np.diff(testeI)>0 and np.diff(testeII)<0):
+        testeI, testeII=np.sum(self.k*(self.rho0-testRhoI)**2, axis=1), np.sum( self.k*(self.rho0-testRhoII)**2, axis=1)
+
+        if (np.sum(testRhoI[1,:])>0 and np.diff(testeI)<0 and np.diff(testeII)>0) or (np.sum(testRhoI[1,:])<0 and np.diff(testeI)>0 and np.diff(testeII)<0):
             self.mrhoBI=np.vstack([np.array([0,0,0,0]), self.mrhoBI])
             self.meBI=np.append(np.array(testeI[0]), self.meBI)
-            self.splitType = 1
-        if (np.sum(testValsI[1,:])<0 and np.diff(testeI)<0 and np.diff(testeII)>0) or (np.sum(testValsI[1,:])>0 and np.diff(testeI)>0 and np.diff(testeII)<0):
+        if (np.sum(testRhoI[1,:])<0 and np.diff(testeI)<0 and np.diff(testeII)>0) or (np.sum(testRhoI[1,:])>0 and np.diff(testeI)>0 and np.diff(testeII)<0):
             self.mrhoBII=np.vstack([np.array([0,0,0,0]), self.mrhoBII])
             self.meBII=np.append(np.array(testeI[0]), self.meBII)
-            self.splitType = 1
 
         #Get the above 2pi curves
         rhoAI=np.vstack([rhoI[rhoI[:,0] <= 0,:], rhoII[rhoII[:,0] <= 0,:]])
@@ -110,14 +107,14 @@ class Vertex:
         self.mrhoAI, self.meAI=mrho[mrho[:,0] <= 0,:], me[mrho[:,0] <= 0]
         self.mrhoAII, self.meAII=mrho[mrho[:,0] >= 0,:], me[mrho[:,0] >= 0]
 
+        self.splitType = 2 if np.diff(testeI)*np.diff(testeII) > 0 else 1
+
         if (np.diff(testeI)>0 and np.diff(testeII)>0):
             self.mrhoAII=np.vstack([np.array([0,0,0,0]), self.mrhoAII])
             self.meAII=np.append(np.array(testeI[0]), self.meAII)
-            self.splitType = 2
         if (np.diff(testeI)<0 and np.diff(testeII)<0):
             self.mrhoAI=np.vstack([np.array([0,0,0,0]), self.mrhoAI])
             self.meAI=np.append(np.array(testeI[0]), self.meAI)
-            self.splitType = 2
 
         self.nmB, self.nmBI, self.nmBII=self.meBI.size+self.meBII.size, self.meBI.size, self.meBII.size
         self.nmA, self.nmAI, self.nmAII=self.meAI.size+self.meAII.size, self.meAI.size, self.meAII.size

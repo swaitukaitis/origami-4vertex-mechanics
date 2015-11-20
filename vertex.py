@@ -150,7 +150,7 @@ class Vertex:
         if n_lowleft == n_lowright and n_upleft != n_upright:
             if n_upleft < n_upright:
                 n_upleft, n_upright = n_upright, n_upleft
-        self.splitVector = np.array([self.nm, self.splitType, n_lowleft, n_lowright, n_upleft, n_upright])
+        self.splitVector = np.array([self.nm, self.splitType, n_lowleft, n_lowright, n_upright, n_upleft])
         self.splitString = ''.join(str(self.splitVector[i]) for i in np.arange(self.splitVector.size))
 
     def check(self):
